@@ -1,0 +1,1538 @@
+/* ===================================================================
+   Element 72 — chat prototype
+   Colour system per the Element72 Color Book directive:
+   Ink + Signal Red + Warm Mineral neutrals. Flat, high-contrast,
+   no gradients. Red is a scarce signal — primary CTAs are Ink.
+   =================================================================== */
+
+/* Brand typeface: PSL-Kittithada (Thai + Latin), self-hosted.
+   Font via Web Font Free (https://www.webfontfree.com) — licensed CC BY 4.0. */
+@font-face {
+  font-family: "PSL-Kittithada";
+  src: url("fonts/PSL-Kittithada.woff2") format("woff2"),
+       url("fonts/PSL-Kittithada.woff") format("woff"),
+       url("fonts/PSL-Kittithada.ttf") format("truetype");
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font: "PSL-Kittithada", system-ui, -apple-system, sans-serif;
+  --font-display: "PSL-Kittithada", system-ui, sans-serif;
+  /* Surfaces — warm mineral neutrals */
+  --paper:    #F5F3EF;   /* bg-canvas      · Neutral-50  */
+  --paper-2:  #EDEAE4;   /* bg-subtle      · Neutral-100 */
+  --card:     #FFFFFF;   /* bg-surface     · White       */
+  /* Text */
+  --ink:      #141210;   /* text-primary / btn-primary · Neutral-950 */
+  --ink-soft: #4F4A45;   /* text-secondary · Neutral-700 */
+  --ink-faint:#6B6560;   /* text-muted     · Neutral-600 */
+  --ink-dis:  #AAA49F;   /* text-disabled  · Neutral-400 */
+  --ink-2:    #332F2B;   /* Neutral-800 · button hover, avatar */
+  /* Borders */
+  --line:     #E0DDD7;   /* border-subtle  · Neutral-200 */
+  --line-2:   #EDEAE4;   /* faint divider  · Neutral-100 */
+  --line-strong:#C8C3BC; /* border-default · Neutral-300 */
+  /* Signal Red — accent (deploy with restraint) */
+  --accent:   #C41E22;   /* Signal Red · Red-500 */
+  --accent-d: #7A1215;   /* hover      · Red-700 */
+  --accent-active:#3D0407;/* pressed   · Red-900 */
+  --accent-bg:#FAE8E8;   /* tint       · Red-100 */
+  --e72-red:  #E0001B;   /* brand wordmark red (color-palette md) · h1 last-word underline */
+  /* Functional */
+  --ok:       #2E5A38;   /* Forest Deep · success/in-stock */
+  --ok-bg:    #DFF0E4;
+  --warn:     #7F5E18;   /* Earth Ochre · warning/low-stock — AA on white & paper-2 (1.4.3) */
+  --warn-bg:  #FDF3DF;
+  --gone:     #6A655F;   /* Neutral-600 · sold-out — AA text contrast (1.4.3) */
+  /* Olive — quiet editorial accent (SS26 reconciliation).
+     Used for eyebrows, brand micro-labels, active states, chat send,
+     status dot. Signal Red stays scarce: 72 underline + urgency + stock-out. */
+  --olive:       #4A4D35; /* labels emphasis, send/active */
+  --olive-mid:   #6B6E50; /* brand labels, eyebrows */
+  --olive-light: #9FA286; /* watermark, status dot, decorative */
+  /* Product-media placeholder (flat — no photography yet) */
+  --media:    #EDEAE4;   /* Neutral-100 tile */
+  --media-ink:#6B6560;   /* icon on tile · Neutral-600 */
+
+  --r-sm: 8px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px;
+  --shadow: 0 1px 2px rgba(20,18,16,.04), 0 8px 28px rgba(20,18,16,.07);
+  --shadow-sm: 0 1px 2px rgba(20,18,16,.05), 0 2px 8px rgba(20,18,16,.05);
+
+  --kb: 0px; /* mobile keyboard inset, set by JS via visualViewport */
+  --bar-bottom: calc(20px + env(safe-area-inset-bottom)); /* floating-bar offset */
+  --chatbar-h: 64px; /* collapsed chat-bar height — checkout FAB stacks above it */
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow-x: clip; }
+body {
+  font-family: var(--font);
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button { font-family: inherit; cursor: pointer; }
+
+/* ---------- App shell ---------- */
+.app {
+  display: flex; flex-direction: column;
+  height: 100dvh;
+  max-width: 720px; margin: 0 auto;
+  background: var(--paper);
+  position: relative;
+}
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper) 86%, transparent);
+  backdrop-filter: saturate(1.1) blur(8px);
+  position: sticky; top: 0; z-index: 20;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.logo {
+  font-family: var(--font-display); font-weight: 800; letter-spacing: -.02em;
+  font-size: 20px; color: var(--ink);
+}
+/* Wordmark is near-black; the brand's single red accent is the underline beneath "72". */
+.logo b { color: var(--ink); border-bottom: 2.5px solid var(--accent); padding-bottom: 1px; }
+.brand-sub {
+  font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-faint); font-weight: 600;
+}
+.topbar-actions { display: flex; align-items: center; gap: 12px; }
+
+.lang-toggle {
+  display: inline-flex; border: 1px solid var(--line); border-radius: 999px;
+  overflow: hidden; background: var(--paper-2);
+}
+.lang-toggle button {
+  border: 0; background: transparent; padding: 6px 12px;
+  font-size: 12.5px; font-weight: 600; color: var(--ink-soft);
+}
+.lang-toggle button.active { background: var(--ink); color: var(--paper-2); }
+
+.cart-btn {
+  position: relative; border: 1px solid var(--line); background: var(--paper-2);
+  width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center; color: var(--ink);
+  transition: border-color .15s, transform .1s;
+}
+.cart-btn:hover { border-color: var(--ink-faint); }
+.cart-btn:active { transform: scale(.95); }
+.cart-count {
+  position: absolute; top: -6px; right: -6px;
+  min-width: 18px; height: 18px; padding: 0 4px;
+  background: var(--accent); color: #fff; border-radius: 999px;
+  font-size: 11px; font-weight: 700; display: grid; place-items: center;
+  transform: scale(0); transition: transform .18s cubic-bezier(.3,1.4,.5,1);
+}
+.cart-count.show { transform: scale(1); }
+
+/* ---------- Chat stream ---------- */
+.chat-wrap { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.chat {
+  padding: 22px 18px calc(8px + var(--kb));
+  display: flex; flex-direction: column; gap: 18px;
+}
+
+.msg { max-width: 92%; }
+.msg-user {
+  align-self: flex-end; background: var(--ink); color: #fff;
+  padding: 10px 15px; border-radius: 18px 18px 4px 18px;
+  font-size: 14.5px; line-height: 1.45; box-shadow: var(--shadow-sm);
+}
+.msg-bot { align-self: flex-start; max-width: 100%; width: 100%; }
+
+.bot-row { display: flex; gap: 10px; align-items: flex-start; }
+.avatar {
+  flex: none; width: 30px; height: 30px; border-radius: 9px;
+  background: var(--ink-2);
+  color: #fff; display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 800; font-size: 12px;
+  margin-top: 2px;
+}
+.bot-body { flex: 1; min-width: 0; }
+.bot-text {
+  font-size: 14.5px; line-height: 1.5; color: var(--ink);
+  background: var(--paper-2); border: 1px solid var(--line-2);
+  padding: 11px 15px; border-radius: 4px 16px 16px 16px;
+  display: inline-block; max-width: 100%;
+}
+.bot-text strong { color: var(--olive); font-weight: 700; }
+.bot-text .muted { color: var(--ink-soft); }
+
+/* typing dots */
+.typing { display: inline-flex; gap: 4px; padding: 4px 2px; }
+.typing span {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint);
+  animation: blink 1.2s infinite ease-in-out;
+}
+.typing span:nth-child(2) { animation-delay: .2s; }
+.typing span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%,80%,100%{opacity:.25;transform:translateY(0)} 40%{opacity:1;transform:translateY(-2px)} }
+
+/* ---------- Product cards ---------- */
+.cards { margin-top: 12px; display: grid; gap: 12px; }
+@media (min-width: 540px) { .cards.multi { grid-template-columns: 1fr 1fr; } }
+
+.card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow);
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .4s ease, transform .4s cubic-bezier(.2,.7,.3,1), border-color .15s;
+  display: flex; flex-direction: column;
+}
+.card.in { opacity: 1; transform: none; }
+.card:hover { border-color: var(--ink-faint); }
+
+/* The rich product card frames its photo: a 16px inset between the photo and
+   the card edge, with the card surface showing through as the frame. The photo
+   itself lives in a rounded viewport (.pcar) that can carousel multiple frames. */
+.card-media {
+  position: relative;
+  padding: 16px;
+  background: var(--card);
+  color: var(--media-ink);
+}
+.card-media svg { width: 40%; height: 40%; opacity: .9; }
+
+/* ---------- Product photo carousel (inset, rounded viewport) ---------- */
+.pcar {
+  position: relative;
+  aspect-ratio: 1 / 1;            /* square — matches the studio photography for a crop-free fit */
+  border-radius: 14px;            /* rounded corners on the photo */
+  overflow: hidden;
+  /* Faintly tinted mat so a white studio cutout still reads as framed (not a
+     bleed into the white card). */
+  background: var(--paper-2);     /* neutral mat behind any non-square frame */
+  touch-action: pan-y;            /* page still scrolls vertically; we own horizontal swipe */
+  user-select: none; -webkit-user-select: none;
+}
+/* Hairline ring that traces the rounded viewport edge ABOVE the photo, so the
+   frame + corners stay legible even when the studio shot is on white
+   (WCAG 2.2 1.4.11 non-text contrast). Sits below arrows/dots/wordmark, which
+   are appended after the track in the DOM. */
+.pcar::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  pointer-events: none; z-index: 1;
+}
+/* Keyboard focus on the swipeable viewport — the track is interactive via
+   arrow keys, so it MUST show a visible focus ring (WCAG 2.2 2.4.7). */
+.pcar:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.pcar:focus:not(:focus-visible) { outline: none; }
+.pcar.has-multi { cursor: grab; }
+.pcar.has-multi:active { cursor: grabbing; }
+.pcar-track {
+  position: absolute; inset: 0;
+  display: flex;
+  transition: transform .42s cubic-bezier(.22,.61,.36,1);
+  will-change: transform;
+}
+.pcar-slide {
+  position: relative; flex: 0 0 100%; width: 100%; height: 100%;
+  display: grid; place-items: center; color: var(--media-ink);
+}
+.pcar-slide svg { width: 40%; height: 40%; opacity: .9; }
+.pcar-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;            /* show the whole product — never crop it */
+  object-position: center;
+}
+
+.pcar-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 36px; height: 36px; border-radius: 50%; padding: 0;
+  border: 1px solid var(--line-strong);
+  background: rgba(255,255,255,.94);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  color: var(--ink); display: grid; place-items: center; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(20,18,16,.16);
+  opacity: 0; transition: opacity .18s ease, background .15s, transform .1s;
+}
+.pcar-arrow svg { width: 18px; height: 18px; }
+.pcar-arrow.prev { left: 10px; }
+.pcar-arrow.next { right: 10px; }
+.pcar:hover .pcar-arrow, .pcar:focus-within .pcar-arrow { opacity: 1; }
+.pcar-arrow:hover { background: #fff; border-color: var(--ink-faint); }
+.pcar-arrow:active { transform: translateY(-50%) scale(.93); }
+.pcar-arrow:disabled { opacity: 0 !important; pointer-events: none; }
+/* A tabbing keyboard user must see the focused arrow even though arrows are
+   hover-hidden by default (WCAG 2.2 2.4.7). */
+.pcar-arrow:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--ink); outline-offset: 2px;
+}
+
+.pcar-dots {
+  position: absolute; left: 0; right: 0; bottom: 6px; z-index: 2;
+  display: flex; justify-content: center; gap: 2px; pointer-events: none;
+}
+/* Each dot is a 24x24 tap target (WCAG 2.2 2.5.8): a transparent 24x24 button
+   whose visible 7px core is drawn by the centered ::after, so touch users
+   don't have to hit a 7px point. */
+.pcar-dot {
+  pointer-events: auto; box-sizing: border-box;
+  width: 24px; height: 24px; padding: 0; border: 0;
+  background: transparent; cursor: pointer;
+  display: grid; place-items: center;
+  transition: transform .15s;
+}
+.pcar-dot::after {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(20,18,16,.55);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.7);
+  transition: background .15s;
+}
+.pcar-dot.on::after { background: var(--ink); transform: scale(1.28); }
+.pcar-dot:focus-visible {
+  outline: 2px solid var(--ink); outline-offset: -2px; border-radius: 50%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pcar-track { transition: none; }
+  .pcar-dot { transition: none; }
+  .pcar-arrow { transition: opacity .18s ease; }
+  .grid-media .media-img { transition: none; }
+  .grid-open:hover .grid-media .media-img { transform: none; }
+  .grid-card { transition: none; }
+  .grid-card:hover { transform: none; }
+  .grid-chat { transition: none; }
+}
+
+/* Real product photography — covers the media tile; the category icon stays
+   behind as a fallback (revealed only if the photo fails to load). No z-index:
+   the image is earlier in the DOM than badges/wordmark/flags, so those overlays
+   paint on top, while the image still covers the fallback icon. */
+.grid-media, .card-media, .cmedia, .ki-media, .bc-media { overflow: hidden; }
+.cmedia, .bc-media { position: relative; }
+.media-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  /* Resize the photo to fit inside its frame (height-bounded, centred) rather
+     than crop it. An oversized image scales down to fit; nothing overflows or
+     gets clipped. Matches the product-card carousel (.pcar-img). */
+  object-fit: contain; object-position: center;
+  background: var(--media);
+}
+/* (Brand wordmark over the product photo removed — the brand now reads only as
+   the .card-brand body eyebrow, so nothing UI-rendered obstructs the photo.) */
+.badges { position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; }
+.badge {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 999px;
+}
+.badge-new { background: var(--ink); color: #fff; }
+.badge-best { background: var(--card); color: var(--ink); border: 1px solid var(--line-strong); }
+
+.card-body { padding: 14px 15px 15px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
+.card-brand { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--olive-mid); font-weight: 700; }
+.card-name { font-size: 24px; font-weight: 700; line-height: 1.25; margin: -2px 0 0; }
+.card-blurb { font-size: 12.5px; color: var(--ink-soft); line-height: 1.4; }
+.card-price { font-family: var(--font-display); font-weight: 800; font-size: 18px; letter-spacing: -.01em; }
+
+.swatches { display: flex; gap: 6px; align-items: center; }
+.swatch { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid rgba(0,0,0,.12); box-shadow: inset 0 0 0 2px #fff; }
+
+.sizes-label { font-size: 11px; color: var(--olive-mid); font-weight: 600; letter-spacing: .03em; margin-bottom: -2px; }
+.sizes { display: flex; flex-wrap: wrap; gap: 6px; }
+.size {
+  min-width: 38px; padding: 6px 9px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--paper-2); font-size: 12.5px; font-weight: 600; color: var(--ink);
+  display: inline-flex; flex-direction: column; align-items: center; line-height: 1.05;
+  transition: border-color .12s, background .12s, transform .08s;
+}
+.size .stk { font-size: 9px; font-weight: 600; margin-top: 2px; }
+.size:hover:not(:disabled) { border-color: var(--ink); }
+.size:active:not(:disabled) { transform: scale(.94); }
+.size.selected { border-color: var(--ink); background: var(--card); box-shadow: 0 0 0 1.5px var(--ink) inset; }
+.size.low .stk { color: var(--warn); }
+.size.ok .stk { color: var(--ok); }
+.size:disabled { color: var(--gone); cursor: not-allowed; background: transparent; border-style: dashed; }
+.size:disabled .lab { text-decoration: line-through; }
+.size.req { outline: 2px dashed var(--ink-soft); outline-offset: 2px; }
+
+.card-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 4px; }
+.btn {
+  border-radius: 11px; font-weight: 650; font-size: 13.5px; padding: 10px 14px;
+  border: 1px solid transparent; transition: transform .08s, background .15s, border-color .15s;
+}
+.btn:active { transform: scale(.97); }
+/* Primary CTA = Ink (btn-primary). Red is reserved for Checkout + signals. */
+.btn-add { background: var(--ink); color: #fff; flex: 1; font-weight: 600; }
+.btn-add:hover { background: var(--ink-2); }
+.btn-add:disabled { background: var(--paper-2); color: var(--ink-dis); border-color: var(--line); cursor: not-allowed; }
+.btn-ghost { background: transparent; border-color: var(--line-strong); color: var(--ink-soft); }
+.btn-ghost:hover { border-color: var(--ink); color: var(--ink); }
+
+.stock-line { font-size: 11.5px; font-weight: 600; }
+.stock-line.ok { color: var(--ok); }
+.stock-line.low { color: var(--warn); }
+.stock-line.gone { color: var(--accent); }
+
+/* "view more" pill */
+.more-row { display: flex; justify-content: center; margin-top: 4px; }
+.more-pill {
+  border: 1px dashed var(--line); background: var(--paper-2); color: var(--ink-soft);
+  border-radius: 999px; padding: 8px 16px; font-size: 12.5px; font-weight: 600;
+}
+.more-pill:hover { border-color: var(--ink-faint); color: var(--ink); }
+
+/* refine chips after a result */
+.refine { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+.refine .chip { font-size: 12px; padding: 6px 12px; }
+
+/* ---------- Compact chat product card ----------
+   Scoped to .cards .card — the product cards streamed INTO the conversation
+   (NOT the expanded .item-card overlay, which reuses .card markup outside
+   .cards and must stay full size). Goal: collapse the card to ~1/3 of its
+   height so the whole thing — photo, name, price, sizes, CTAs — is visible
+   in one chat window without scrolling. The dominant lever is the photo:
+   the rich card's full-width square (.pcar aspect 1/1) is what makes the card
+   tall, so we cap it to a short fixed-height frame and tighten type/spacing
+   proportionally while keeping everything legible. */
+.cards .card-media { padding: 10px 10px 0; }
+.cards .card .pcar {
+  aspect-ratio: auto;       /* drop the square — the photo no longer == card width */
+  height: 116px;            /* short framed strip; object-fit:contain keeps the product whole */
+}
+.cards .card-body { padding: 10px 12px 11px; gap: 5px; }
+.cards .card-brand { font-size: 10px; }
+.cards .card-name { font-size: 16px; line-height: 1.2; }
+.cards .card-blurb {
+  font-size: 11px; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.cards .card-price { font-size: 15px; }
+.cards .swatches { gap: 5px; }
+.cards .swatch { width: 12px; height: 12px; }
+.cards .sizes-label { font-size: 10px; }
+/* Sizes as a single-row horizontal slider: keep them on ONE line so a long
+   size run scrolls sideways instead of wrapping into extra rows (which would
+   make the card taller). Buttons hold their width; a thin scrollbar + scroll
+   snap signal the row is swipeable. */
+.cards .sizes {
+  gap: 5px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  /* fade the right edge so a clipped size hints "more this way" */
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 18px), transparent 100%);
+          mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 18px), transparent 100%);
+  padding-bottom: 2px;      /* room for the scrollbar so it doesn't clip the chips */
+}
+/* only apply the fade mask when the row actually overflows (scroll-driven) —
+   harmless when it fits; the fade just sits over empty trailing space. */
+.cards .sizes::-webkit-scrollbar { height: 4px; }
+.cards .sizes::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 999px; }
+.cards .sizes::-webkit-scrollbar-track { background: transparent; }
+.cards .size {
+  min-width: 30px; padding: 4px 7px; font-size: 11.5px; border-radius: 7px;
+  flex: 0 0 auto;           /* never shrink — overflow scrolls instead of squashing */
+  scroll-snap-align: start;
+}
+.cards .size .stk { font-size: 8px; margin-top: 1px; }
+.cards .stock-line { font-size: 10.5px; }
+.cards .card-actions { padding-top: 2px; }
+.cards .card-actions.sub { margin-top: 5px; }
+.cards .card .btn-add { padding: 8px 12px; font-size: 12.5px; }
+.cards .card .btn.csmall { padding: 6px 9px; font-size: 11px; }
+
+/* ---------- Composer / entry point ---------- */
+.composer-wrap {
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(8px);
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  position: sticky; bottom: 0; z-index: 20;
+}
+.prompt-menu { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.chip {
+  border: 1px solid var(--line); background: var(--paper-2); color: var(--ink);
+  border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 550;
+  font-weight: 500; transition: border-color .12s, background .12s, transform .08s;
+}
+.chip:hover { border-color: var(--olive-mid); color: var(--olive); }
+.chip:active { transform: scale(.96); }
+.chip .ic { margin-right: 6px; opacity: .6; }
+
+.composer { display: flex; gap: 9px; align-items: center; }
+#queryInput {
+  flex: 1; border: 1px solid var(--line); background: var(--card);
+  border-radius: 14px; padding: 13px 16px; font-size: 16px; color: var(--ink);
+  font-family: var(--font);
+  outline: none; transition: border-color .15s, box-shadow .15s;
+}
+#queryInput::placeholder { color: var(--ink-faint); }
+#queryInput:focus { border-color: var(--olive-mid); box-shadow: 0 0 0 3px color-mix(in srgb, var(--olive) 16%, transparent); }
+#sendBtn {
+  flex: none; width: 46px; height: 46px; border-radius: 14px; border: 0;
+  background: var(--olive); color: #fff; display: grid; place-items: center;
+  transition: transform .08s, background .15s;
+}
+#sendBtn:hover { background: var(--ink); }
+#sendBtn:active { transform: scale(.94); }
+
+.escape-row { display: flex; align-items: center; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+.escape-row button {
+  background: none; border: 0; color: var(--ink-soft); font-size: 12.5px; font-weight: 600;
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line);
+  padding: 0;
+}
+.escape-row button:hover { color: var(--olive); text-decoration-color: var(--olive-mid); }
+.phase-badge {
+  margin-left: auto; font-size: 10.5px; color: var(--ink-faint); font-weight: 600;
+  letter-spacing: .02em; border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px;
+}
+
+/* ---------- Cart panel ---------- */
+.overlay {
+  position: fixed; inset: 0; background: rgba(32,32,29,.4); backdrop-filter: blur(2px);
+  opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 40;
+}
+.overlay.show { opacity: 1; pointer-events: auto; }
+.cart-panel {
+  position: fixed; top: 0; right: 0; height: 100dvh; width: min(420px, 90vw);
+  background: var(--paper); z-index: 50; box-shadow: -10px 0 40px rgba(0,0,0,.18);
+  transform: translateX(100%); transition: transform .3s cubic-bezier(.3,.8,.3,1);
+  display: flex; flex-direction: column;
+}
+.cart-panel.open { transform: none; }
+.cart-head { display: flex; justify-content: space-between; align-items: center; padding: 18px; border-bottom: 1px solid var(--line); }
+.cart-head h2 { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 800; }
+.cart-close { border: 0; background: none; font-size: 22px; color: var(--ink-soft); line-height: 1; }
+.cart-items { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+.cart-empty { color: var(--ink-faint); font-size: 14px; text-align: center; margin-top: 40px; line-height: 1.5; }
+.cart-item { display: flex; gap: 12px; align-items: center; }
+.ci-thumb { width: 50px; height: 50px; border-radius: 10px; display: grid; place-items: center; color: var(--media-ink); flex: none; }
+.ci-thumb svg { width: 24px; height: 24px; }
+.ci-info { flex: 1; min-width: 0; }
+.ci-name { font-size: 13.5px; font-weight: 600; }
+.ci-meta { font-size: 12px; color: var(--ink-soft); }
+.ci-price { font-weight: 700; font-size: 13.5px; font-family: var(--font-display); }
+.ci-remove { border: 0; background: none; color: var(--ink-faint); font-size: 12px; text-decoration: underline; }
+.cart-foot { border-top: 1px solid var(--line); padding: 18px; }
+.cart-sub { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.cart-note { font-size: 11.5px; color: var(--ink-faint); margin-bottom: 12px; line-height: 1.4; }
+.cart-checkout { width: 100%; background: var(--accent); color: #fff; border: 0; padding: 14px; border-radius: 13px; font-weight: 600; font-size: 15px; }
+.cart-checkout:hover { background: var(--accent-d); }
+
+/* ---------- Browse modal (passive-browser escape hatch) ---------- */
+.browse-modal {
+  position: fixed; inset: 0; background: var(--paper); z-index: 60;
+  transform: translateY(100%); transition: transform .32s cubic-bezier(.3,.8,.3,1);
+  display: flex; flex-direction: column;
+}
+.browse-modal.open { transform: none; }
+.browse-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.browse-head h2 { margin: 0; font-family: var(--font-display); font-size: 18px; font-weight: 800; }
+.browse-grid {
+  overflow-y: auto; padding: 16px; display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.browse-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.browse-card .bc-media { aspect-ratio: 1/1; display: grid; place-items: center; color: var(--media-ink); }
+.browse-card .bc-media svg { width: 40%; height: 40%; }
+.browse-card .bc-body { padding: 10px; }
+.browse-card .bc-brand { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
+.browse-card .bc-name { font-size: 12.5px; font-weight: 600; line-height: 1.2; margin: 2px 0 4px; }
+.browse-card .bc-price { font-family: var(--font-display); font-weight: 800; font-size: 13px; }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: 96px; transform: translate(-50%, 20px);
+  background: var(--ink); color: var(--paper-2); padding: 12px 18px; border-radius: 12px;
+  font-size: 13.5px; font-weight: 550; font-weight: 500; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; z-index: 70;
+  max-width: 90vw; text-align: center;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast b { color: #E07073; }
+/* The "added to bag" toast fires exactly as the checkout FAB rises into the
+   same spot — lift the toast clear of it so they read as a stack, not a pile-up.
+   Only while the FAB is genuinely visible (not when the chat overlay hid it). */
+body:has(.checkout-fab.show:not(.hidden)) .toast,
+body:has(.chat-checkout.show) .toast { bottom: calc(var(--bar-bottom) + var(--chatbar-h) + 84px); }
+
+/* ---------- Phase 2: secondary card actions ---------- */
+.card-actions.sub { margin-top: 8px; padding-top: 0; gap: 8px; }
+.btn.csmall { padding: 8px 10px; font-size: 12px; flex: 1; }
+.btn-ghost.cmp-btn.active {
+  border-color: var(--ink); color: var(--ink);
+  background: var(--paper-2);
+}
+
+/* ---------- Phase 2: reveal wrapper ---------- */
+.reveal { opacity: 0; transform: translateY(10px); transition: opacity .4s ease, transform .4s cubic-bezier(.2,.7,.3,1); }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ---------- Phase 2: comparison ---------- */
+.compare { position: relative; margin-top: 12px; }
+.compare-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--card); box-shadow: var(--shadow); -webkit-overflow-scrolling: touch; }
+.compare-scroll:focus-visible { outline: 2px solid var(--olive); outline-offset: 2px; }
+.compare-table { display: grid; grid-template-columns: 108px repeat(var(--cols), minmax(132px, 1fr)); min-width: min-content; }
+.ccell { padding: 11px 12px; font-size: 13px; border-top: 1px solid var(--line-2); display: flex; align-items: center; font-variant-numeric: tabular-nums; }
+/* Sticky row-label column: on a 3-up compare that scrolls, the shopper always
+   knows which attribute the cell belongs to. */
+.ccell.clabel { position: sticky; left: 0; z-index: 1; color: var(--ink-soft); font-weight: 600; font-size: 11.5px; letter-spacing: .02em; background: var(--paper-2); border-right: 1px solid var(--line-strong); }
+.ccell.alt { background: color-mix(in srgb, var(--paper-2) 55%, transparent); }
+.ccell.ccap { text-transform: capitalize; }  /* Type value matches the Title-case of the other rows */
+.ccell.clabel.alt { background: var(--paper-2); }
+.ccell.cprod { flex-direction: column; align-items: flex-start; gap: 5px; border-top: 0; padding: 13px 12px; }
+.ccell.chead-corner { position: sticky; left: 0; z-index: 1; border-top: 0; background: var(--paper-2); border-right: 1px solid var(--line-strong); }
+.cmedia { width: 100%; aspect-ratio: 3/2; border-radius: 10px; display: grid; place-items: center; color: var(--media-ink); margin-bottom: 3px; }
+.cmedia svg { width: 38%; height: 38%; }
+.cbrand { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
+.cname { font-size: 13px; font-weight: 600; line-height: 1.2; }
+.btn.csmall.cview { width: 100%; flex: none; margin-top: 4px; }
+
+/* --- Decision-support cells: the values a shopper actually decides on --- */
+/* Price = the hero row. Display face, larger, ink — it reads as the headline
+   number, not just another 13px cell. */
+.ccell.cprice { padding-top: 13px; padding-bottom: 13px; gap: 8px; flex-wrap: wrap; }
+.cprice .cval-num { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--ink); letter-spacing: -.01em; }
+.cnum .cval-num { font-weight: 700; }
+/* Lowest-price marker — a quiet olive pill (not red; red is reserved). */
+.cprice .cbadge {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--olive); background: color-mix(in srgb, var(--olive) 12%, var(--card));
+  border: 1px solid color-mix(in srgb, var(--olive) 30%, transparent);
+  padding: 2px 6px; border-radius: 999px; white-space: nowrap;
+}
+.ccell.cprice.cbest .cval-num { color: var(--olive); }
+
+/* Waterproof: text label + glyph, never colour/symbol alone (WCAG 1.4.1). */
+.ccell.cflag { gap: 6px; }
+.cflag-mark { font-weight: 800; font-size: 13px; line-height: 1; }
+.cflag-word { font-size: 12.5px; font-weight: 600; }
+.cflag-yes .cflag-mark { color: var(--ok); }
+.cflag-yes .cflag-word { color: var(--ok); }
+.cflag-no .cflag-mark { color: var(--ink-faint); }
+.cflag-no .cflag-word { color: var(--ink-faint); }
+
+/* Availability: a coloured dot + a status WORD + the count. The word and dot
+   carry the same meaning, so it survives grayscale (WCAG 1.4.1). */
+.ccell.cstock { gap: 6px; flex-wrap: wrap; }
+.cstk-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.cstk-word { font-size: 12.5px; font-weight: 700; }
+.cstk-detail { font-size: 11px; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.cstk-ok .cstk-dot { background: var(--ok); }
+.cstk-ok .cstk-word { color: var(--ok); }
+.cstk-low .cstk-dot { background: var(--warn); }
+.cstk-low .cstk-word { color: #7E5C1C; }
+.cstk-gone .cstk-dot { background: var(--accent); }
+.cstk-gone .cstk-word { color: var(--accent); }
+
+/* Right-edge scroll affordance: a fade that advertises "there's more" on
+   narrow / 3-up compares, and clears once you reach the end. */
+.compare-hint {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 36px;
+  border-radius: 0 var(--r-lg) var(--r-lg) 0;
+  background: linear-gradient(to right, transparent, color-mix(in srgb, var(--card) 92%, transparent));
+  opacity: 0; transition: opacity .18s ease-out; pointer-events: none;
+}
+.compare-hint.show { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .compare-hint { transition: none; }
+  .cbar-x { transition: none; }
+  /* Reveal must not gate content behind motion for reduced-motion users. */
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ---------- Phase 2: outfit / kit ---------- */
+.kit { margin-top: 12px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--card); box-shadow: var(--shadow); overflow: hidden; }
+.kit-head { padding: 13px 15px; border-bottom: 1px solid var(--line-2); background: var(--paper-2); }
+.kit-title { font-family: var(--font-display); font-weight: 800; font-size: 15px; letter-spacing: -.01em; }
+.kit-title .ki-sub { font-family: var(--font); font-weight: 500; font-size: 12px; color: var(--ink-faint); letter-spacing: 0; margin-left: 6px; }
+.kit-why { margin-top: 5px; font-size: 12px; line-height: 1.35; color: var(--ink-soft); }
+.kit-items { display: flex; gap: 10px; overflow-x: auto; padding: 13px 15px; }
+.kit-item { flex: 0 0 116px; cursor: pointer; transition: transform .1s; }
+.kit-item:active { transform: scale(.97); }
+.ki-media { position: relative; aspect-ratio: 1/1; border-radius: 12px; display: grid; place-items: center; color: var(--media-ink); margin-bottom: 7px; }
+.ki-media svg { width: 40%; height: 40%; }
+.kit-pick { position: absolute; top: 7px; left: 7px; background: var(--ink); color: #fff; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; padding: 2px 7px; border-radius: 999px; }
+.ki-brand { font-size: 9.5px; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; }
+.ki-name { font-size: 12px; font-weight: 600; line-height: 1.2; margin: 1px 0 2px; }
+.ki-price { font-family: var(--font-display); font-weight: 800; font-size: 12.5px; }
+.kit-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 15px; border-top: 1px solid var(--line-2); }
+.kit-total { font-size: 13.5px; color: var(--ink-soft); }
+.kit-total b { font-family: var(--font-display); font-weight: 800; font-size: 16px; color: var(--ink); }
+.kit-addall { flex: none; }
+
+/* ---------- Phase 2: compare tray bar ---------- */
+/* Page-level compare tray. A floating bar pinned above the chat bar (mirrors
+   the checkout FAB), so staged products and the "Compare (n)" action stay
+   reachable with the chat collapsed. When the checkout FAB is also up, the tray
+   rides above it rather than overlapping. JS hides it while the chat is open. */
+.compare-bar {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--bar-bottom) + var(--chatbar-h) + 12px);
+  width: 640px; max-width: calc(100% - 28px); z-index: 31;
+  display: none; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+  padding: 10px 13px;
+  background: var(--card); border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg); box-shadow: var(--shadow);
+}
+.compare-bar.show { display: flex; }
+body:has(.checkout-fab.show:not(.hidden)) .compare-bar.show {
+  bottom: calc(var(--bar-bottom) + var(--chatbar-h) + 78px);
+}
+@media (max-width: 720px) {
+  .compare-bar { max-width: calc(100% - 24px); }
+}
+/* Title + progress, so the staged state reads as a step, not a dead end. */
+.cbar-head { display: inline-flex; align-items: baseline; gap: 7px; flex: none; }
+.cbar-title { font-family: var(--font-display); font-weight: 800; font-size: 13px; letter-spacing: -.01em; color: var(--ink); }
+.cbar-step { font-size: 11px; font-weight: 600; color: var(--ink-faint); }
+.cbar-step.staging { color: var(--olive); }
+.cbar-list { display: flex; gap: 6px; flex-wrap: wrap; flex: 1 1 100%; min-width: 0; }
+.cbar-chip { display: inline-flex; align-items: center; gap: 2px; background: var(--paper-2); border: 1px solid var(--line-strong); border-radius: 999px; padding: 3px 4px 3px 11px; font-size: 12px; font-weight: 600; }
+/* Remove control: ≥24px hit area (WCAG 2.5.8 target size, AA). */
+.cbar-x { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; cursor: pointer; color: var(--ink-faint); font-size: 11px; line-height: 1; background: none; border: 0; border-radius: 999px; transition: background .12s, color .12s; }
+.cbar-x:hover { color: var(--ink); background: var(--line); }
+.cbar-actions { display: flex; gap: 7px; flex: none; margin-left: auto; }
+.cbar-actions .btn { padding: 8px 12px; font-size: 12.5px; min-height: 36px; }
+.cbar-go:disabled { background: var(--line); color: var(--ink-faint); cursor: not-allowed; }
+/* "Find one more" — a forward affordance, not a dead disabled button.
+   Ink/neutral (not red) per the Color Book's red-restraint rule. */
+.cbar-find { white-space: nowrap; border-color: var(--line-strong); color: var(--ink); font-weight: 700; }
+.cbar-find:hover { background: var(--paper-2); border-color: var(--ink-faint); }
+
+@media (max-width: 420px) {
+  .phase-badge { display: none; }
+  .card-media { padding: 12px; }       /* tighter inset frame on small screens */
+  .pcar { border-radius: 12px; }
+  .pcar-arrow { opacity: 1; }          /* no hover on touch — keep arrows visible */
+}
+
+/* ===================================================================
+   SS26 RECONCILIATION — editorial storefront + floating chat layer
+   -------------------------------------------------------------------
+   Layout + chat model from the SS26 spec; PSL-Kittithada font, the
+   functional product card, and the warm-mineral palette kept from the
+   repo. Olive = quiet editorial accent; Signal Red stays scarce.
+   =================================================================== */
+
+/* ---------- Announcement bar ---------- */
+.announce {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--ink); color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  padding: 7px 24px;
+}
+.announce span { white-space: nowrap; }
+.announce span:not(.announce-mid) { opacity: .55; }
+
+/* ---------- Nav (links | wordmark | actions) ---------- */
+.nav {
+  position: sticky; top: 0; z-index: 20;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  height: 54px; padding: 0 24px;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: saturate(1.1) blur(10px); -webkit-backdrop-filter: saturate(1.1) blur(10px);
+  border-bottom: .5px solid var(--line);
+}
+.nav-left { display: flex; align-items: center; gap: 22px; }
+.nav-link {
+  border: 0; background: none; padding: 0;
+  font-family: var(--font-display); font-size: 11px; font-weight: 500;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink);
+  transition: color .15s;
+}
+.nav-link:hover { color: var(--olive); }
+.nav-brand { justify-self: center; display: flex; align-items: center; }
+.brand-logo { height: 20px; width: auto; display: block; }
+.nav-right { justify-self: end; display: flex; align-items: center; gap: 12px; }
+
+/* ---------- Page wrapper ---------- */
+.page { max-width: 1280px; margin: 0 auto; padding-bottom: 150px; }
+
+/* ---------- Marketing gallery (top-section carousel) ---------- */
+.gallery {
+  position: relative; background: var(--ink); border-bottom: .5px solid var(--line);
+  /* full-bleed: span the entire viewport width, breaking out of the centered .page container */
+  width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw);
+}
+.gallery-viewport { overflow: hidden; }
+.gallery-track {
+  display: flex; overflow-x: auto;
+  scroll-snap-type: x mandatory; scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; -ms-overflow-style: none;
+}
+.gallery-track::-webkit-scrollbar { display: none; }
+.gallery-slide {
+  flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always;
+  border: 0; margin: 0; padding: 0; background: var(--ink);
+  cursor: pointer; line-height: 0; -webkit-tap-highlight-color: transparent;
+}
+.gallery-slide img {
+  /* contain (not cover) so every banner fits its full height without cropping,
+     even ones whose ratio differs from the 12/5 box (e.g. keen-lifestyle 1600x534) */
+  display: block; width: 100%; aspect-ratio: 12 / 5; object-fit: contain;
+  user-select: none; -webkit-user-drag: none;
+}
+.gallery-slide:focus-visible { outline: 2px solid var(--paper); outline-offset: -4px; }
+
+/* prev / next controls */
+.gallery-nav {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: 40px; height: 40px; border-radius: 999px;
+  display: grid; place-items: center; color: var(--ink);
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+  border: .5px solid color-mix(in srgb, var(--line-strong) 70%, transparent);
+  backdrop-filter: blur(8px) saturate(1.1); -webkit-backdrop-filter: blur(8px) saturate(1.1);
+  box-shadow: var(--shadow-sm);
+  transition: background .15s, transform .1s, opacity .2s;
+}
+.gallery-nav svg { width: 20px; height: 20px; }
+.gallery-nav:hover { background: var(--paper); }
+.gallery-nav:active { transform: translateY(-50%) scale(.92); }
+.gallery-nav.prev { left: 16px; }
+.gallery-nav.next { right: 16px; }
+
+/* slide indicators */
+.gallery-dots {
+  position: absolute; left: 0; right: 0; bottom: 14px; z-index: 2;
+  display: flex; gap: 7px; justify-content: center;
+}
+.gallery-dots button {
+  width: 7px; height: 7px; padding: 0; border: 0; border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 78%, transparent);
+  box-shadow: 0 1px 3px rgba(0,0,0,.45), 0 0 0 1px rgba(0,0,0,.25);
+  transition: width .25s cubic-bezier(.2,.7,.3,1), background .2s;
+}
+.gallery-dots button.active { width: 22px; background: var(--paper); }
+
+@media (prefers-reduced-motion: reduce) { .gallery-track { scroll-behavior: auto; } }
+
+/* ---------- Brand editorial band ---------- */
+.hero-band {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px; background: var(--paper);
+  border-bottom: .5px solid var(--line);
+}
+.eyebrow {
+  font-family: var(--font-display); font-size: 10px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--olive-mid);
+}
+.hero-title {
+  margin: 0; padding-bottom: 10px; font-family: var(--font-display); font-weight: 800;
+  font-size: 42px; line-height: .98; letter-spacing: -.01em; text-transform: uppercase; color: var(--ink);
+}
+.hero-title em { font-style: normal; font-weight: 400; color: var(--olive-mid); }
+/* red underline on the last word of every <h1> — echoes the brand wordmark's red bar under "72" */
+h1 .rl {
+  text-decoration-line: underline;
+  text-decoration-color: var(--e72-red);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  text-decoration-skip-ink: none;
+}
+.hero-body { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-soft); white-space: nowrap; }
+
+/* ---------- Section header ---------- */
+.section-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 22px 24px 0;
+}
+.section-count {
+  font-family: var(--font-display); font-size: 11px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--olive-mid);
+}
+
+/* ---------- Storefront bestsellers — SEPARATE cards (not a lattice) ---------- */
+/* Each product is a self-contained card — its own border, radius, and shadow,
+   floated on the paper canvas with a gap between cards — mirroring the "normal"
+   chat product card (.card) and the 09 product-card spec, rather than the old
+   fused 1px-hairline grid where cards shared cell walls. */
+.grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 18px 0 0;
+  padding: 16px;
+}
+/* Condensed member of the rich-card family (.card): same shell, same inset+
+   rounded photo framing (.pcar), same .badge system, same .btn actions —
+   miniaturised for the storefront grid. Photo still reads ~70% of the card
+   (4/5 framed viewport) above a brand-eyebrow + name + two real CTAs. The card
+   itself is a static <article>; the controls inside it are interactive.
+   Radius is --r-md (14px) not the card's --r-lg (20px): a tighter radius reads
+   correct at grid scale, the one deliberate step down from the rich card. */
+.grid-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  display: flex; flex-direction: column;
+  transition: box-shadow .2s ease, transform .25s cubic-bezier(.2,.7,.3,1), border-color .15s;
+}
+/* Compare pin — circular toggle floated over the storefront photo (top-right,
+   mirroring the "New" badge on the left). Lets a shopper stage two products to
+   compare without opening the guide. Olive fill = staged (see .cmp-btn.active). */
+.grid-cmp {
+  position: absolute; top: 18px; right: 18px; z-index: 3;
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--paper) 84%, transparent);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border: 1px solid var(--line-strong); color: var(--ink-soft);
+  box-shadow: var(--shadow-sm); cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s, transform .08s;
+}
+.grid-cmp:hover { background: var(--paper); color: var(--ink); border-color: var(--ink-faint); }
+.grid-cmp:active { transform: scale(.92); }
+.grid-cmp:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.grid-cmp.active { background: var(--olive); border-color: var(--olive); color: #fff; }
+.grid-cmp.active:hover { background: var(--ink); border-color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .grid-cmp { transition: none; } }
+.grid-card:hover {
+  box-shadow: 0 2px 4px rgba(20,18,16,.06), 0 14px 36px rgba(20,18,16,.12);
+  transform: translateY(-3px); border-color: var(--ink-faint);
+}
+/* Name button wraps the framed photo + text block: one labeled "view details"
+   control, keyboard-reachable. Looks like a framed image + caption, behaves
+   like a button. */
+.grid-open {
+  appearance: none; border: 0; background: none; padding: 0; margin: 0;
+  text-align: left; cursor: pointer; color: inherit; font: inherit;
+  display: flex; flex-direction: column;
+}
+.grid-open:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; border-radius: 6px; }
+.grid-open:focus:not(:focus-visible) { outline: none; }
+/* The frame: 12px inset between photo and card edge (the rich card uses 16px),
+   the card surface showing through as the mat — same language as .card-media. */
+.grid-media {
+  position: relative; padding: 12px 12px 0;
+  background: var(--card); color: var(--media-ink);
+}
+/* The rounded photo viewport — a condensed .pcar: 4/5 (keeps the image ~70% of
+   the card; square would over-shrink it once the text+actions footer is added),
+   tinted mat so a white studio cutout still reads as framed, --r-sm corners. */
+.grid-pcar {
+  position: relative;
+  aspect-ratio: 4/5; border-radius: var(--r-sm); overflow: hidden;
+  background: var(--paper-2);
+  display: grid; place-items: center;
+}
+.grid-pcar svg { width: 34%; height: 34%; opacity: .85; }
+/* Hairline ring tracing the rounded viewport ABOVE the photo, so the frame +
+   corners stay legible on white studio shots (WCAG 2.2 1.4.11 non-text
+   contrast) — mirrors .pcar::after. Below the badge (z-index:1). */
+.grid-pcar::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  pointer-events: none; z-index: 1;
+}
+/* Fill the framed viewport (the global .media-img is `contain`, which letterboxes
+   on the mat). Cover crops the studio shot's empty margins to the frame edges so
+   the product fills it. object-position centred — fine for centred product shots. */
+.grid-media .media-img {
+  transition: transform .4s cubic-bezier(.22,1,.36,1); border-radius: inherit;
+  object-fit: cover; object-position: center;
+}
+.grid-open:hover .grid-media .media-img { transform: scale(1.035); }
+/* Badge sits inside the frame, like the rich card's .badges (top:12 left:12,
+   here top/left:10 to suit the tighter 12px inset). Reuses .badge / .badge-new. */
+.grid-media .badges { top: 10px; left: 10px; z-index: 2; }
+/* Brand eyebrow + name — the .card-brand / .card-name family, scaled. The cheap
+   strong cue that ties the grid card to the rich card's identity. */
+.grid-text {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 11px 13px 12px;
+}
+.grid-brand {
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--olive-mid); font-weight: 700; line-height: 1;
+}
+.grid-name {
+  font-size: 24px; font-weight: 700; line-height: 1.3; color: var(--ink);
+  /* hold the footer height stable so the framed image keeps its ~70% share */
+  min-height: 1.3em;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.grid-open:hover .grid-name { color: var(--olive); }
+/* Price: the decision-driving token, in display weight + tabular figures so it
+   anchors the card and digits never reflow. Echoes the rich card's .card-price,
+   scaled for the grid. */
+.grid-price {
+  margin-top: -2px; font-family: var(--font-display); font-weight: 800;
+  font-size: 15px; letter-spacing: -.01em; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+/* Two CTAs: ink-fill "Buy now" (primary) + gradient-outlined "Add to chat"
+   (the conversational path). Echoes .card-actions / .btn (11px radius, 600).
+   Side-by-side at desktop; stack at narrow widths. */
+.grid-actions { display: flex; gap: 8px; padding: 0 13px 13px; margin-top: auto; }
+.grid-actions .btn {
+  flex: 1; min-height: 40px; padding: 9px 10px; font-size: 12.5px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 11px;
+}
+/* Registered so the conic ring's start angle interpolates smoothly (an
+   unregistered custom property would animate discretely — the spin would jump,
+   not turn). Scoped to the chat-button ring; no inheritance needed. */
+@property --atc-angle { syntax: "<angle>"; initial-value: 135deg; inherits: false; }
+
+/* "Add to chat" is the SECONDARY (conversational) path beside the ink "Buy now"
+   primary. At REST it's a quiet olive outline — olive is the brand's editorial
+   accent, Signal Red stays reserved for buy/critical, and ink "Buy now" keeps
+   the weight. The signature conic gradient is NOT the resting style; it rides in
+   only as a transient, glowing, spinning ring during two motion moments (the
+   scroll-in wake and hover), then fades back to the olive outline. Gradient =
+   momentary invitation; olive = the calm state it always returns to. */
+.grid-chat {
+  position: relative; isolation: isolate;
+  border: 1.5px solid color-mix(in srgb, var(--olive-mid) 55%, var(--line-strong));
+  background: var(--card);
+  color: var(--olive);
+  transition: transform .12s cubic-bezier(.25,1,.5,1), background .15s ease, border-color .3s ease, color .15s ease, box-shadow .3s ease;
+}
+/* The conic ring lives on a pseudo, drawn with the mask-punch trick so only the
+   frame paints, sitting over the olive border (z-index -1 keeps it above the
+   border but below the label). Hidden at rest; crossfading its opacity IS the
+   "return to olive" — when the glow finishes, the gradient simply fades away and
+   the olive outline beneath is what remains. */
+.grid-chat::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  padding: 2px;
+  --atc-angle: 135deg;
+  background: conic-gradient(from var(--atc-angle),
+    var(--olive), var(--olive-light), var(--accent), var(--warn), var(--olive));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity .3s ease;
+}
+/* Hover/focus: the gradient ring wakes and spins, a tight glow blooms (kept ≤18px
+   so the card's overflow:hidden never clips it to nothing), the button lifts 1px. */
+.grid-chat:hover, .grid-chat:focus-visible {
+  background: color-mix(in srgb, var(--olive) 7%, var(--card));
+  border-color: var(--olive); color: var(--olive);
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--olive) 18%, transparent),
+    0 0 13px color-mix(in srgb, var(--olive) 52%, transparent),
+    0 0 18px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.grid-chat:hover::before, .grid-chat:focus-visible::before {
+  opacity: 1;
+  animation: gridChatSpin 5.5s linear infinite;
+}
+.grid-chat:active { transform: translateY(0) scale(.985); }
+.grid-buy:focus-visible, .grid-chat:focus-visible {
+  outline: 2px solid var(--ink); outline-offset: 2px;
+}
+/* One-time "wake": when the storefront grid first scrolls into view, each chat
+   button's ring fades in, spins one full revolution with a glow pulse, then fades
+   back to the olive outline — staggered down the grid (--i) so the eye is drawn
+   along the chat path. JS adds .wake once and removes it on animationend. */
+.grid-chat.wake { animation: gridChatWakeGlow 1.3s ease both; animation-delay: calc(var(--i, 0) * 70ms); }
+.grid-chat.wake::before { animation: gridChatWakeRing 1.3s ease both; animation-delay: calc(var(--i, 0) * 70ms); }
+@keyframes gridChatSpin { to { --atc-angle: 495deg; } }
+@keyframes gridChatWakeRing {
+  0%   { opacity: 0; --atc-angle: 135deg; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; --atc-angle: 495deg; }
+}
+@keyframes gridChatWakeGlow {
+  0%   { box-shadow: 0 0 0 0 transparent; }
+  45%  { box-shadow:
+           0 0 0 2px color-mix(in srgb, var(--olive) 16%, transparent),
+           0 0 14px color-mix(in srgb, var(--olive) 55%, transparent),
+           0 0 20px color-mix(in srgb, var(--accent) 26%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+/* Motion is the invitation, never the only signal: the olive outline (and on
+   hover a static gradient ring) still marks the chat path with movement off. */
+@media (prefers-reduced-motion: reduce) {
+  .grid-chat.wake { animation: none; }
+  .grid-chat.wake::before, .grid-chat:hover::before, .grid-chat:focus-visible::before { animation: none; }
+  .grid-chat:hover, .grid-chat:focus-visible { transform: none; }
+}
+
+
+/* ---------- Official-importer partner band (before the footer) ---------- */
+.partners {
+  display: flex; flex-direction: column; gap: 22px;
+  padding: 40px 24px 44px; background: var(--paper-2);
+  border-top: .5px solid var(--line);
+}
+.partners-head { display: flex; flex-direction: column; gap: 8px; }
+.partners-note { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); max-width: 440px; }
+.partners-row {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+}
+.partner-tile {
+  background: var(--card); border: .5px solid var(--line);
+  border-radius: var(--r-md); min-height: 96px; overflow: hidden;
+  display: grid; place-items: center; padding: 22px 24px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.partner-tile:hover { border-color: var(--line-strong); box-shadow: var(--shadow-sm); }
+.partner-tile img {
+  width: auto; height: auto; max-width: 100%; max-height: 50px;
+  object-fit: contain; display: block;
+}
+/* KEEN ships as a 300×300 square with heavy whitespace around a wide badge —
+   crop the padding with a fixed cover box so it reads at the same weight as the rest. */
+.partner-tile img[src*="keen"] {
+  width: 150px; height: 50px; max-width: 100%; max-height: none;
+  object-fit: cover; object-position: center;
+}
+
+/* ---------- Floating chat bar (collapsed / persistent) ---------- */
+.chatbar {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: var(--bar-bottom);
+  width: 640px; max-width: calc(100% - 28px); z-index: 30;
+  display: flex; align-items: center;
+  background: color-mix(in srgb, var(--paper) 60%, transparent);
+  border: .5px solid color-mix(in srgb, var(--line-strong) 75%, transparent);
+  border-radius: var(--r-xl);
+  backdrop-filter: blur(18px) saturate(1.1); -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  padding: 11px 11px 11px 22px;
+  box-shadow: 0 4px 24px rgba(20,18,16,.12);
+  transition: background .2s, border-color .2s, opacity .2s, transform .2s;
+}
+.chatbar:hover { background: color-mix(in srgb, var(--paper) 77%, transparent); border-color: color-mix(in srgb, var(--olive-mid) 45%, transparent); }
+.chatbar.hidden { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(8px); }
+.chatbar-open {
+  flex: 1; min-width: 0; display: flex; align-items: center;
+  background: none; border: 0; padding: 0; text-align: left;
+  border-radius: var(--r-xl);
+}
+.chatbar-open:focus-visible { outline: 2px solid var(--olive); outline-offset: 6px; }
+.chatbar-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--olive-light); margin-right: 13px; animation: pulse 2.4s infinite ease-in-out; }
+@keyframes pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+/* The "live guide" dot pulse is ambient, not informational — hold it steady when
+   the user has asked for reduced motion (WCAG 2.3.3; baseline-ui reduced-motion). */
+@media (prefers-reduced-motion: reduce) {
+  .chatbar-dot { animation: none; opacity: .9; }
+}
+/* Placeholder / affordance text: semibold (600), not bold (700) — the bar is an
+   invitation to type, and 700 reads as a filled-in value, not an empty field
+   (frontend-design: copy is design material; weight-hierarchy reserves 700 for
+   headings). Solid --ink-soft (#4F4A45 ~ 7:1 on paper), not an alpha-mixed muted
+   gray: through the 60%-opaque glass the previous ink-faint@90% mix fell under
+   4.5:1; --ink-soft clears WCAG 2.2 1.4.3 even on the lightest backdrop. */
+.chatbar-text { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chatbar-topics { display: flex; gap: 4px; margin: 0 8px; flex: none; }
+.topic-tag {
+  font-family: var(--font-display); font-size: 9px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--olive-mid); background: none; white-space: nowrap;
+  border: .5px solid color-mix(in srgb, var(--olive-mid) 35%, transparent);
+  padding: 5px 10px; border-radius: 20px; transition: background .15s, color .15s;
+}
+.topic-tag:hover { background: color-mix(in srgb, var(--olive) 12%, transparent); color: var(--olive); }
+.topic-tag:focus-visible { outline: 2px solid var(--olive); outline-offset: 2px; }
+.chatbar-send { flex: none; width: 42px; height: 42px; border-radius: 50%; background: var(--olive); color: #fff; border: 0; display: grid; place-items: center; transition: background .15s; }
+.chatbar:hover .chatbar-send { background: var(--ink); }
+.chatbar-send:focus-visible { outline: 2px solid var(--olive); outline-offset: 2px; }
+.chatbar-send svg { width: 18px; height: 18px; }
+
+/* ---------- Persistent quick-checkout bar (stacks above the chat bar) ----------
+   Shown only when the bag has items. Signal Red is the brand's reserved "buy"
+   colour (same as the cart drawer's checkout button), so this reads as THE
+   action without a second look. Motion: a slide-up entrance, a quiet periodic
+   glow ring to keep it noticed, and a one-shot bump each time an item lands. */
+.checkout-fab {
+  position: fixed; left: 50%;
+  bottom: calc(var(--bar-bottom) + var(--chatbar-h) + 12px);
+  transform: translateX(-50%) translateY(12px) scale(.96);
+  width: 640px; max-width: calc(100% - 28px); z-index: 29;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: var(--accent); color: #fff;
+  border: 0; border-radius: var(--r-lg);
+  box-shadow: 0 6px 20px rgba(196,30,34,.30), 0 2px 6px rgba(20,18,16,.16);
+  opacity: 0; pointer-events: none;
+  transition: opacity .28s ease, transform .28s cubic-bezier(.2,.8,.2,1), background .15s;
+}
+/* The glow ring lives on a pseudo-element so the base shadow stays free for
+   :hover, and the looping animation never fights the entrance/bump transforms. */
+.checkout-fab::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  pointer-events: none; opacity: 0;
+}
+.checkout-fab.show {
+  opacity: 1; pointer-events: auto;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+.checkout-fab.show::after { animation: fabRing 2.9s ease-out infinite; }
+.checkout-fab.bump { animation: fabBump .42s cubic-bezier(.2,.9,.3,1.4); }
+.checkout-fab:hover {
+  background: var(--accent-d);
+  box-shadow: 0 9px 26px rgba(196,30,34,.40), 0 2px 6px rgba(20,18,16,.18);
+}
+.checkout-fab:active { transform: translateX(-50%) translateY(0) scale(.985); }
+.checkout-fab:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+/* Hidden while the chat overlay is open (its backdrop is light + blurred, so a
+   bright pill would glow through). Cart-empty state stays at the base rule. */
+.checkout-fab.hidden {
+  opacity: 0; pointer-events: none;
+  transform: translateX(-50%) translateY(12px) scale(.96);
+  animation: none;
+}
+.checkout-fab.hidden::after { animation: none; }
+
+.cf-bag { flex: none; display: grid; place-items: center; }
+.cf-text { display: flex; flex-direction: column; text-align: left; line-height: 1.16; }
+.cf-title { font-size: 14px; font-weight: 700; letter-spacing: .01em; }
+.cf-meta { font-size: 11px; font-weight: 600; opacity: .9; }  /* .82 was 4.37:1 on red — fails AA at 11px (1.4.3); .9 = 5.0:1 */
+.cf-total {
+  margin-left: auto; font-family: var(--font-display); font-weight: 800;
+  font-size: 17px; letter-spacing: -.01em; font-variant-numeric: tabular-nums;
+}
+.cf-go { flex: none; display: grid; place-items: center; opacity: .9; }
+
+@keyframes fabRing {
+  0%   { box-shadow: 0 0 0 0 rgba(196,30,34,.45); opacity: .85; }
+  70%  { box-shadow: 0 0 0 13px rgba(196,30,34,0); opacity: 0; }
+  100% { box-shadow: 0 0 0 0 rgba(196,30,34,0); opacity: 0; }
+}
+@keyframes fabBump {
+  0%   { transform: translateX(-50%) translateY(0) scale(1); }
+  35%  { transform: translateX(-50%) translateY(-3px) scale(1.05); }
+  100% { transform: translateX(-50%) translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .checkout-fab,
+  .checkout-fab.show,
+  .checkout-fab.hidden { transition: opacity .2s ease; transform: translateX(-50%); }
+  .checkout-fab.bump,
+  .checkout-fab.show::after { animation: none; }
+}
+
+/* In-chat quick-checkout — the FAB's twin, shown above the composer while the
+   chat is open (the floating FAB is behind the overlay there). Same Signal Red,
+   same content; sits in the panel's flow rather than fixed to the viewport. */
+.chat-checkout {
+  display: none; margin: 2px 16px 10px;
+  align-items: center; gap: 12px; padding: 12px 16px;
+  background: var(--accent); color: #fff; border: 0; border-radius: var(--r-md);
+  box-shadow: 0 6px 18px rgba(196,30,34,.28), 0 2px 6px rgba(20,18,16,.14);
+  text-align: left; transition: background .15s, transform .08s;
+}
+.chat-checkout.show { display: flex; animation: ccIn .3s cubic-bezier(.2,.8,.2,1) both; }
+.chat-checkout.bump { animation: ccBump .42s cubic-bezier(.2,.9,.3,1.4); }
+.chat-checkout:hover { background: var(--accent-d); }
+.chat-checkout:active { transform: scale(.99); }
+.chat-checkout:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@keyframes ccIn  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes ccBump { 0% { transform: none; } 35% { transform: translateY(-2px) scale(1.02); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .chat-checkout.show, .chat-checkout.bump { animation: none; }
+}
+
+/* ---------- Expanded chat overlay ---------- */
+.chat-overlay {
+  position: fixed; inset: 0; z-index: 40;
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .2s ease;
+}
+.chat-overlay.open { opacity: 1; pointer-events: auto; }
+/* The chat panel and the storefront behind it are both --paper, so the scrim
+   carries the separation. 7% ink left the panel edge dissolving into the page;
+   12% + the 8px blur gives the panel a readable boundary (WCAG 2.2 1.4.11
+   non-text contrast) while still letting the storefront show through — this is
+   a layer/overlay, not a content-blocking modal, so it stops short of a full
+   40-60% scrim. The panel's own border + shadow do the rest, so legibility
+   never rests on the scrim alone. */
+.chat-backdrop {
+  position: absolute; inset: 0;
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+  backdrop-filter: blur(8px) saturate(1.05); -webkit-backdrop-filter: blur(8px) saturate(1.05);
+}
+.chat-panel {
+  position: relative; z-index: 2;
+  width: min(540px, 100% - 24px); max-height: min(80dvh, 720px);
+  background: var(--paper); border: 1px solid var(--line-strong);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  box-shadow: 0 -10px 48px rgba(20,18,16,.22);
+  display: flex; flex-direction: column;
+  padding-bottom: var(--kb);
+  transform: translateY(12px); transition: transform .2s ease-out;
+}
+.chat-overlay.open .chat-panel { transform: none; }
+.chat-panel-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 6px; }
+.chat-guide-label { font-family: var(--font-display); font-size: 10px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint); display: inline-flex; align-items: center; gap: 7px; }
+.chat-guide-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--olive-light); }
+.chat-close { border: 0; background: rgba(20,18,16,.07); width: 30px; height: 30px; border-radius: 50%; color: var(--ink-soft); font-size: 15px; line-height: 1; display: grid; place-items: center; transition: background .15s, color .15s; }
+.chat-close:hover { background: rgba(20,18,16,.14); color: var(--ink); }
+.chat-panel .chat-wrap { flex: 1; min-height: 120px; }
+.chat-panel .chat { padding: 14px 20px 6px; gap: 16px; }
+.chat-suggest { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 18px 6px; }
+.chat-suggest .chip {
+  font-family: var(--font-display); font-size: 9.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+  padding: 6px 12px; background: color-mix(in srgb, var(--card) 60%, transparent);
+}
+.chat-panel .escape-row { padding: 2px 18px 4px; margin-top: 0; }
+.chat-panel .composer {
+  margin: 6px 16px 16px;
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+  border: .5px solid var(--line); border-radius: var(--r-xl);
+  padding: 5px 5px 5px 18px;
+  box-shadow: 0 2px 16px rgba(20,18,16,.06);
+}
+.chat-panel #queryInput { border: 0; background: transparent; border-radius: 0; padding: 9px 0; }
+.chat-panel #queryInput:focus { border: 0; box-shadow: none; }
+.chat-panel #sendBtn { width: 38px; height: 38px; border-radius: 50%; }
+
+/* ---------- Item-click nudge ----------
+   After a user clicks an item and it lands in the thread, the composer edge
+   lights olive and a ring ripples outward once — a single confident "your turn"
+   that invites another search without nagging. Two short sweeps, then it rests;
+   self-clears in JS, cancels the moment the user engages the input. The hint is
+   also spoken via an aria-live region (app.js) so it isn't motion-only. */
+.chat-panel .composer.nudge { animation: searchNudge .52s cubic-bezier(.22,1,.36,1) 2; }
+@keyframes searchNudge {
+  0% {
+    border-color: var(--olive-mid);
+    box-shadow: 0 2px 16px rgba(20,18,16,.06), 0 0 0 0 color-mix(in srgb, var(--olive) 46%, transparent);
+  }
+  60% {
+    border-color: var(--olive-mid);
+    box-shadow: 0 2px 16px rgba(20,18,16,.06), 0 0 0 7px color-mix(in srgb, var(--olive) 0%, transparent);
+  }
+  100% {
+    border-color: var(--line);
+    box-shadow: 0 2px 16px rgba(20,18,16,.06), 0 0 0 0 color-mix(in srgb, var(--olive) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* No motion — hold a steady olive ring for the same dwell instead. */
+  .chat-panel .composer.nudge {
+    animation: none;
+    border-color: var(--olive-mid);
+    box-shadow: 0 2px 16px rgba(20,18,16,.06), 0 0 0 2px color-mix(in srgb, var(--olive) 28%, transparent);
+  }
+}
+
+/* ---------- Browse modal — see-all affordance ---------- */
+.browse-seeall {
+  grid-column: 1 / -1; border: 1px dashed var(--line-strong); background: var(--paper-2);
+  color: var(--ink-soft); border-radius: var(--r-md); padding: 14px;
+  font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: .04em; text-transform: uppercase;
+}
+.browse-seeall:hover { border-color: var(--olive-mid); color: var(--olive); }
+
+/* ===================================================================
+   Item card view — expanded product detail (chat stays dormant)
+   A storefront click expands the item into a centred dialog. The only
+   bridge into the conversation is the "Add to chat" gradient-ring CTA.
+   =================================================================== */
+.item-overlay {
+  position: fixed; inset: 0; z-index: 65;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  opacity: 0; pointer-events: none; transition: opacity .22s ease;
+}
+.item-overlay.open { opacity: 1; pointer-events: auto; }
+.item-backdrop {
+  position: absolute; inset: 0;
+  background: color-mix(in srgb, var(--ink) 11%, transparent);
+  backdrop-filter: blur(9px) saturate(1.05); -webkit-backdrop-filter: blur(9px) saturate(1.05);
+}
+.item-dialog {
+  position: relative; z-index: 2;
+  width: min(440px, 100%); max-height: 90dvh;
+  display: flex; flex-direction: column;
+  transform: translateY(14px) scale(.985);
+  transition: transform .26s cubic-bezier(.2,.7,.3,1);
+}
+.item-overlay.open .item-dialog { transform: none; }
+.item-close {
+  position: absolute; top: 12px; right: 12px; z-index: 3;
+  border: 0; width: 34px; height: 34px; border-radius: 50%;
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  color: var(--ink-soft); font-size: 16px; line-height: 1;
+  display: grid; place-items: center; box-shadow: var(--shadow-sm);
+  transition: background .15s, color .15s, transform .08s;
+}
+.item-close:hover { background: var(--paper); color: var(--ink); }
+.item-close:active { transform: scale(.94); }
+.item-scroll {
+  overflow-y: auto; border-radius: var(--r-lg);
+  -webkit-overflow-scrolling: touch;
+}
+/* In the dialog the card IS the whole surface — lift it and give the media room. */
+.item-card { box-shadow: 0 24px 70px rgba(20,18,16,.24); border-color: var(--line); }
+.item-card:hover { border-color: var(--line); }
+.item-card .card-media { padding: 18px; }   /* a touch more room in the expanded view */
+
+/* ---------- Compare overlay (page-level comparison view) ----------
+   The side-by-side table opens here, on the webpage, so the comparison no
+   longer depends on the chat being open. Same dialog grammar as the item view;
+   wider, since the table needs the room. The .compare component inside keeps its
+   own scroll/edge-fade — we just flatten its shadow so it isn't a box-in-a-box. */
+.compare-overlay {
+  position: fixed; inset: 0; z-index: 66;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  opacity: 0; pointer-events: none; transition: opacity .22s ease;
+}
+.compare-overlay.open { opacity: 1; pointer-events: auto; }
+.compare-backdrop {
+  position: absolute; inset: 0;
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+  backdrop-filter: blur(9px) saturate(1.05); -webkit-backdrop-filter: blur(9px) saturate(1.05);
+}
+.compare-dialog {
+  position: relative; z-index: 2;
+  width: min(680px, 100%); max-height: 88dvh;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--paper); border: 1px solid var(--line-strong);
+  border-radius: var(--r-xl); box-shadow: 0 24px 64px rgba(20,18,16,.28);
+  transform: translateY(14px) scale(.985);
+  transition: transform .26s cubic-bezier(.2,.7,.3,1);
+}
+.compare-overlay.open .compare-dialog { transform: none; }
+.compare-dhead {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 15px 18px; border-bottom: 1px solid var(--line); flex: none;
+}
+.compare-dhead h2 {
+  margin: 0; font-family: var(--font-display); font-size: 16px; font-weight: 800;
+  letter-spacing: -.01em; color: var(--ink); line-height: 1.25;
+}
+.compare-dclose {
+  flex: none; border: 0; width: 34px; height: 34px; border-radius: 50%;
+  background: rgba(20,18,16,.07); color: var(--ink-soft);
+  font-size: 16px; line-height: 1; display: grid; place-items: center; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.compare-dclose:hover { background: rgba(20,18,16,.14); color: var(--ink); }
+.compare-dbody { overflow-y: auto; padding: 14px 18px 20px; -webkit-overflow-scrolling: touch; }
+.compare-dbody .compare { margin-top: 0; }
+.compare-dbody .compare-scroll { box-shadow: none; }
+
+/* ---------- "Add to chat" — secondary CTA, olive at rest ----------
+   The conversational path is SECONDARY to "Add to bag" (ink, primary), so at
+   REST it's a calm olive-outlined button. The signature conic gradient is a
+   transient invitation only: the ring crossfades in (spinning, glowing) when the
+   product dialog opens and on hover, then fades back to the olive outline — same
+   grammar as the storefront chat buttons. Signal Red stays reserved for
+   buy/critical; the ink primary keeps the weight (gradient = momentary). */
+.add-to-chat {
+  position: relative; width: 100%; margin-top: 10px;
+  border: 0; background: none; padding: 0; border-radius: 13px;
+  transition: transform .08s;
+}
+.add-to-chat:active { transform: scale(.985); }
+/* The conic ring overlays the face's olive border exactly, masked so only the
+   frame paints; opacity 0 at rest, so the olive outline is what shows — and what
+   the gradient fades back to. */
+.atc-ring {
+  position: absolute; inset: 0; z-index: 1; border-radius: 13px;
+  padding: 1.5px; pointer-events: none;
+  --atc-angle: 135deg;
+  background: conic-gradient(from var(--atc-angle),
+    var(--olive), var(--olive-light), var(--accent), var(--warn), var(--olive));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity .3s ease;
+}
+.atc-face {
+  position: relative;
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 12px 16px; border-radius: 13px;
+  background: var(--card);
+  border: 1.5px solid color-mix(in srgb, var(--olive-mid) 55%, var(--line-strong));
+  color: var(--olive);
+  font-weight: 650; font-size: 14.5px; letter-spacing: .01em;
+  transition: background .15s, border-color .3s ease, color .15s, box-shadow .3s ease;
+}
+.add-to-chat:hover .atc-face, .add-to-chat:focus-visible .atc-face {
+  background: color-mix(in srgb, var(--olive) 7%, var(--card));
+  border-color: var(--olive); color: var(--olive);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--olive) 16%, transparent),
+    0 0 14px color-mix(in srgb, var(--olive) 50%, transparent),
+    0 0 20px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+.add-to-chat:hover .atc-ring, .add-to-chat:focus-visible .atc-ring {
+  opacity: 1; animation: gridChatSpin 5.5s linear infinite;
+}
+/* One-time "wake" when the dialog opens: ring lights, spins once with a glow
+   pulse, then fades back to the olive outline. JS adds .wake, removes on end. */
+.add-to-chat.wake .atc-ring { animation: gridChatWakeRing 1.4s ease both; }
+.add-to-chat.wake .atc-face { animation: gridChatWakeGlow 1.4s ease both; }
+.add-to-chat:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 13px; }
+.atc-face svg { flex: none; }
+@media (prefers-reduced-motion: reduce) {
+  .add-to-chat.wake .atc-ring, .add-to-chat.wake .atc-face,
+  .add-to-chat:hover .atc-ring, .add-to-chat:focus-visible .atc-ring { animation: none; }
+}
+
+.atc-hint {
+  margin: 8px 2px 0; text-align: center;
+  font-size: 11.5px; line-height: 1.35; color: var(--ink-faint);
+}
+
+/* ===================================================================
+   Responsive — mobile is a first-class breakpoint
+   =================================================================== */
+@media (max-width: 900px) {
+  .hero-title { font-size: 34px; }
+  .hero-band { padding: 16px; }
+  .gallery-nav { width: 34px; height: 34px; }
+  .gallery-nav svg { width: 17px; height: 17px; }
+  .gallery-nav.prev { left: 10px; }
+  .gallery-nav.next { right: 10px; }
+  .partners-row { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 760px) {
+  .nav-left { display: none; }
+  .nav { grid-template-columns: auto 1fr auto; }
+  .nav-brand { justify-self: start; }
+}
+@media (max-width: 720px) {
+  .announce span:first-child, .announce span:last-child { display: none; }
+  .announce { justify-content: center; }
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  /* 2-col is narrow: stack the CTAs so labels never wrap mid-word, and give the
+     footer a touch more room — image still reads ~70% via the 4/5 media ratio. */
+  .grid-actions { flex-direction: column; gap: 6px; }
+  .grid-actions .btn { min-height: 40px; font-size: 12px; }
+  .grid-media { padding: 10px 10px 0; }
+  .grid-text { padding: 10px 11px 11px; }
+  .chatbar { max-width: calc(100% - 24px); }
+  .checkout-fab { max-width: calc(100% - 24px); }
+  .chat-panel { width: 100%; border-radius: 18px 18px 0 0; }
+  /* Item dialog fills the small viewport with a snug margin. */
+  .item-overlay { padding: 14px; align-items: flex-end; }
+  .item-dialog { width: 100%; max-height: 92dvh; }
+  /* Compare overlay becomes a bottom sheet on small screens, like the item view. */
+  .compare-overlay { padding: 12px; align-items: flex-end; }
+  .compare-dialog { width: 100%; max-height: 90dvh; }
+}
+@media (max-width: 480px) {
+  /* Topics drop out here, so the placeholder spans the full bar. With room to
+     breathe and one language string showing, ease it back to a true ghost weight
+     (500) so it reads as an invitation, not a value. Still --ink-soft, so the
+     1.4.3 contrast margin holds. */
+  .chatbar-topics { display: none; }
+  .chatbar-text { font-weight: 500; }
+  .hero-editorial { padding: 30px 24px; }
+}

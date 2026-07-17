@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Element 72 — Urban Outdoor</title>
+  <!-- Brand typeface PSL-Kittithada is self-hosted via @font-face in styles.css.
+       Font via Web Font Free (https://www.webfontfree.com), licensed CC BY 4.0. -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Announcement bar -->
+  <div class="announce">
+    <span>Free shipping over ฿2,000</span>
+    <span class="announce-mid">Element 72 • Urban Outdoor</span>
+    <span>Ask the guide — anytime</span>
+  </div>
+
+  <!-- Nav: links · wordmark · actions (chat is the primary navigation surface) -->
+  <header class="nav">
+    <nav class="nav-left" aria-label="Categories">
+      <button class="nav-link" type="button" data-q="what's new">New</button>
+      <button class="nav-link" type="button" data-q="footwear">Footwear</button>
+      <button class="nav-link" type="button" data-q="apparel">Apparel</button>
+      <button class="nav-link" type="button" data-browse>Shop all</button>
+    </nav>
+    <div class="nav-brand">
+      <img class="brand-logo" src="assets/logo-element72.png" alt="Element 72" width="180" height="20" />
+    </div>
+    <div class="nav-right">
+      <div class="lang-toggle" id="langToggle" role="group" aria-label="Language">
+        <button data-lang="en" class="active" type="button">EN</button>
+        <button data-lang="th" type="button">ไทย</button>
+      </div>
+      <button class="cart-btn" id="cartBtn" type="button" aria-label="Cart">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 7h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 7Z"/>
+          <path d="M9 7V6a3 3 0 0 1 6 0v1"/>
+        </svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Storefront page (always browsable; chat is layered on top) -->
+  <main class="page">
+    <!-- Marketing gallery — the top section. Swipeable / auto-advancing
+         banner carousel; each slide seeds a chat query (chat-first entry). -->
+    <section class="gallery" id="gallery" aria-roledescription="carousel" aria-label="Featured &amp; promotions">
+      <div class="gallery-viewport">
+        <div class="gallery-track" id="galleryTrack">
+          <button class="gallery-slide" type="button" data-q="KEEN sandals" aria-label="Shop KEEN sandals">
+            <img src="assets/banners/keen-zerraport.jpg" alt="KEEN Zerraport — urban-outdoor sandals" width="1600" height="667" fetchpriority="high" decoding="async" />
+          </button>
+          <button class="gallery-slide" type="button" data-q="monsoon" aria-label="Shop the rainy-season edit">
+            <img src="assets/banners/monsoon-mood.jpg" alt="Monsoon Mood promotion — rainy-season picks, 8–30 June" width="1600" height="667" loading="lazy" decoding="async" />
+          </button>
+          <button class="gallery-slide" type="button" data-q="camping" aria-label="Shop camping gear">
+            <img src="assets/banners/nanga-promotion.jpg" alt="NANGA down sleeping-bag promotion" width="1280" height="533" loading="lazy" decoding="async" />
+          </button>
+          <button class="gallery-slide" type="button" data-q="drinkware" aria-label="Shop drinkware and lifestyle goods">
+            <img src="assets/banners/blackblum-lunchbox.jpg" alt="black+blum Original Lunch Box" width="1600" height="667" loading="lazy" decoding="async" />
+          </button>
+          <button class="gallery-slide" type="button" data-q="KEEN" aria-label="Shop KEEN">
+            <img src="assets/banners/keen-lifestyle.jpg" alt="KEEN — street-ready footwear" width="1600" height="534" loading="lazy" decoding="async" />
+          </button>
+        </div>
+      </div>
+      <button class="gallery-nav prev" id="galleryPrev" type="button" aria-label="Previous slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <button class="gallery-nav next" id="galleryNext" type="button" aria-label="Next slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <div class="gallery-dots" id="galleryDots" role="tablist" aria-label="Choose slide"></div>
+    </section>
+
+    <!-- Brand editorial band -->
+    <section class="hero-band">
+      <span class="eyebrow">SS26 • Urban Outdoor</span>
+      <h1 class="hero-title">Built for the city, <em>ready for the <span class="rl">trail</span></em></h1>
+      <p class="hero-body">KEEN, YETI, Gramicci and more — the urban-outdoor edit, curated and in stock. Ask the guide for anything.</p>
+    </section>
+
+    <header class="section-head">
+      <span class="eyebrow" id="gridLabel">The edit • Best sellers</span>
+      <span class="section-count" id="gridCount"></span>
+    </header>
+
+    <section class="grid" id="storefrontGrid" aria-label="Products"></section>
+
+    <!-- Official-importer trust band — our biggest partner brands, before the footer -->
+    <section class="partners" aria-labelledby="partnersEyebrow">
+      <div class="partners-head">
+        <span class="eyebrow" id="partnersEyebrow">Official Importer &amp; Distributor</span>
+        <p class="partners-note" id="partnersNote">Element 72 is the official Thailand importer for the brands we carry — authentic stock, full local warranty.</p>
+      </div>
+      <ul class="partners-row" role="list">
+        <li class="partner-tile"><img src="assets/partners/keen.jpg" alt="KEEN — official importer" width="160" height="64" loading="lazy" decoding="async" /></li>
+        <li class="partner-tile"><img src="assets/partners/yeti.png" alt="YETI — official importer" width="160" height="64" loading="lazy" decoding="async" /></li>
+        <li class="partner-tile"><img src="assets/partners/gramicci.jpg" alt="Gramicci — official importer" width="160" height="64" loading="lazy" decoding="async" /></li>
+        <li class="partner-tile"><img src="assets/partners/topo.png" alt="Topo Designs — official importer" width="160" height="64" loading="lazy" decoding="async" /></li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- Persistent quick-checkout bar — appears above the chat bar once the bag
+       has items. Animated (slide-up entrance, periodic glow ring, add-bump);
+       tapping it opens the bag, ready to check out. Reuses Signal Red, the
+       brand's reserved "buy" colour, so it reads unmistakably as the action. -->
+  <button class="checkout-fab" id="checkoutFab" type="button" aria-hidden="true" tabindex="-1">
+    <span class="cf-bag" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 7h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 7Z"/>
+        <path d="M9 7V6a3 3 0 0 1 6 0v1"/>
+      </svg>
+    </span>
+    <span class="cf-text">
+      <strong class="cf-title" id="cfTitle">Checkout</strong>
+      <span class="cf-meta" id="cfMeta"></span>
+    </span>
+    <span class="cf-total" id="cfTotal">฿0</span>
+    <span class="cf-go" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14M13 6l6 6-6 6"/>
+      </svg>
+    </span>
+  </button>
+
+  <!-- Page-level compare tray. Staged products live here so comparison works
+       with the chat collapsed — users browse the storefront, pin items to
+       compare, then open the comparison without ever opening the guide.
+       Floats above the chat bar (and rides above the checkout FAB when both
+       are present). Hidden while the chat overlay is open. -->
+  <div class="compare-bar" id="compareBar" aria-live="polite"></div>
+
+  <!-- Floating chat bar (collapsed / persistent) -->
+  <div class="chatbar" id="chatBar">
+    <button class="chatbar-open" id="chatBarOpen" type="button" aria-label="Open the guide" aria-expanded="false">
+      <span class="chatbar-dot" aria-hidden="true"></span>
+      <span class="chatbar-text" id="chatBarText">Ask a guide — gear, brand, activity…</span>
+    </button>
+    <span class="chatbar-topics" id="chatBarTopics"></span>
+    <button class="chatbar-send" id="chatBarSend" type="button" aria-label="Open the guide">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14M13 6l6 6-6 6"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Expanded chat (overlay, not a modal — the page shows through) -->
+  <div class="chat-overlay" id="chatOverlay" aria-hidden="true">
+    <div class="chat-backdrop" id="chatBackdrop"></div>
+    <div class="chat-panel" id="chatPanel" role="dialog" aria-label="Element 72 guide">
+      <div class="chat-panel-head">
+        <span class="chat-guide-label"><span class="chat-guide-dot"></span> Guide</span>
+        <button class="chat-close" id="chatClose" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <main class="chat-wrap" id="chatWrap">
+        <div class="chat" id="chat"></div>
+      </main>
+
+      <div class="chat-suggest" id="chatSuggest"></div>
+
+      <div class="escape-row">
+        <button id="browseBtn" type="button"></button>
+        <button id="humanBtn" type="button"></button>
+        <span class="phase-badge">Phase 1–2 • rule-based • no AI inference</span>
+      </div>
+
+      <!-- In-chat quick-checkout — same state as the floating FAB, but shown
+           above the composer while the chat is open (the FAB itself sits behind
+           the overlay, so the conversation needs its own checkout affordance). -->
+      <button class="chat-checkout" id="chatCheckout" type="button" aria-hidden="true" tabindex="-1">
+        <span class="cf-bag" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 7h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 7Z"/>
+            <path d="M9 7V6a3 3 0 0 1 6 0v1"/>
+          </svg>
+        </span>
+        <span class="cf-text">
+          <strong class="cf-title">Checkout</strong>
+          <span class="cf-meta"></span>
+        </span>
+        <span class="cf-total">฿0</span>
+        <span class="cf-go" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </span>
+      </button>
+
+      <form class="composer" id="composer" autocomplete="off">
+        <input id="queryInput" type="text" aria-label="Ask Element 72" />
+        <button id="sendBtn" type="submit" aria-label="Send">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Item card view (expanded product detail).
+       A storefront click expands the item HERE — the chat is NOT activated
+       until the user taps "Add to chat" (the animated gradient-ring CTA). -->
+  <div class="item-overlay" id="itemOverlay" aria-hidden="true">
+    <div class="item-backdrop" id="itemBackdrop"></div>
+    <div class="item-dialog" role="dialog" aria-modal="true" aria-label="Product detail">
+      <button class="item-close" id="itemClose" type="button" aria-label="Close">✕</button>
+      <div class="item-scroll" id="itemBody"></div>
+    </div>
+  </div>
+
+  <!-- Cart -->
+  <div class="overlay" id="overlay"></div>
+  <aside class="cart-panel" id="cartPanel" aria-label="Cart">
+    <div class="cart-head">
+      <h2 id="cartTitle">Your bag</h2>
+      <button class="cart-close" id="cartClose" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-foot">
+      <div class="cart-sub"><span id="cartSubLabel">Subtotal</span><span id="cartSubtotal">฿0</span></div>
+      <p class="cart-note" id="cartNote"></p>
+      <button class="cart-checkout" id="checkoutBtn" type="button"></button>
+    </div>
+  </aside>
+
+  <!-- Compare view (page-level overlay). Opens the side-by-side table on the
+       webpage itself — the chat can stay collapsed. Reuses the same comparison
+       component the guide streams inline, so the two surfaces never diverge. -->
+  <div class="compare-overlay" id="compareOverlay" aria-hidden="true">
+    <div class="compare-backdrop" id="compareBackdrop"></div>
+    <div class="compare-dialog" role="dialog" aria-modal="true" aria-label="Product comparison">
+      <div class="compare-dhead">
+        <h2 id="compareDTitle">Compare</h2>
+        <button class="compare-dclose" id="compareClose" type="button" aria-label="Close">✕</button>
+      </div>
+      <div class="compare-dbody" id="compareBody"></div>
+    </div>
+  </div>
+
+  <!-- Browse-all modal (full-catalogue escape hatch; defaults to the lifestyle edit) -->
+  <div class="browse-modal" id="browseModal" aria-label="Browse all">
+    <div class="browse-head">
+      <h2 id="browseTitle">Everything</h2>
+      <button class="cart-close" id="browseClose" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="browse-grid" id="browseGrid"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="catalog.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

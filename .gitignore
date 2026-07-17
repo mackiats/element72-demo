@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+._*
+
+# Editors
+.vscode/
+*.swp
+*~
+
+# Internal working docs — not part of the demo
+UX-AUDIT.md
